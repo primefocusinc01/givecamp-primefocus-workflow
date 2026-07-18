@@ -32,12 +32,18 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      - name: Get GCP access token
+        id: token
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
       - name: Login to Google Artifact Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGION }}-docker.pkg.dev
           username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
+          password: ${{ steps.token.outputs.token }}
 
       - name: Set image tag
         id: tag
