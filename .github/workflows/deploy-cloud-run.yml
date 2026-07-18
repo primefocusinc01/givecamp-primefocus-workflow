@@ -3,15 +3,6 @@ name: Build and Deploy to Google Cloud Run
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Deployment environment'
-        required: true
-        default: 'dev'
-        type: choice
-        options:
-          - dev
-          - staging
-          - prod
       image_tag:
         description: 'Docker image tag (leave empty for git SHA)'
         required: false
@@ -88,7 +79,6 @@ jobs:
           region: ${{ env.REGION }}
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:${{ steps.tag.outputs.tag }}
           env_vars: |
-            ENVIRONMENT=${{ github.event.inputs.environment }}
             IMAGE_TAG=${{ steps.tag.outputs.tag }}
 
       - name: Show deployment URL
