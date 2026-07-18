@@ -3,6 +3,7 @@ package org.primfocusinc.workflow.api.controller;
 import org.primfocusinc.workflow.api.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +26,7 @@ public class UserController {
         this.userService = userService;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<Map<String, String>> create(@RequestBody Map<String, Object> body) throws Exception {
         String id = userService.create(body);
@@ -41,6 +43,7 @@ public class UserController {
         return ResponseEntity.ok(userService.findById(id));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Void> update(@PathVariable String id,
                                        @RequestBody Map<String, Object> body) throws Exception {
@@ -48,6 +51,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable String id) throws Exception {
         userService.delete(id);

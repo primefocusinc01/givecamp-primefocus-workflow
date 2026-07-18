@@ -1,7 +1,6 @@
 package org.primfocusinc.workflow.api.service;
 
 import com.google.api.core.ApiFuture;
-import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
@@ -10,14 +9,9 @@ import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.SetOptions;
 import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,21 +21,10 @@ import java.util.concurrent.ExecutionException;
 @Service
 public class FirestoreService {
 
-    private Firestore firestore;
+    private final Firestore firestore;
 
-    @Value("${google.credentialsJson}")
-    private String credentialsJson;
-
-
-    @PostConstruct
-    void postInit() throws IOException {
-        GoogleCredentials credentials = GoogleCredentials.fromStream(new ByteArrayInputStream(credentialsJson.getBytes()));
-        FirebaseOptions options = new FirebaseOptions.Builder()
-                .setCredentials(credentials)
-                .build();
-        FirebaseApp.initializeApp(options);
-
-        firestore = FirestoreClient.getFirestore();
+    public FirestoreService(FirebaseApp firebaseApp) {
+        this.firestore = FirestoreClient.getFirestore(firebaseApp);
     }
 
     public <T> void save(String collection, String documentId, T data)
