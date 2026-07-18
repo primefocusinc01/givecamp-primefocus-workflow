@@ -22,7 +22,7 @@ public class FirestoreManager {
 
   private static void initializeFirestore() throws IOException {
     InputStream serviceAccount = new FileInputStream(
-        "src/main/resources/static/serviceAccountKey.json");
+        "src/main/resources/static/serviceAccountKey.json"); //need to change for some Cloud Variable
 
     GoogleCredentials credentials = GoogleCredentials.fromStream(serviceAccount);
     FirebaseOptions options = new FirebaseOptions.Builder()
