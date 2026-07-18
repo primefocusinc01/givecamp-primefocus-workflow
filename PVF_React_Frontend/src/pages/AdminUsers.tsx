@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, doc, getDocs, updateDoc } from 'firebase/firestore'
+import { collection, doc, deleteDoc, getDocs, updateDoc } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
 import { db, DEFAULT_ROLE, type UserRole } from '../firebase'
 
@@ -44,6 +44,20 @@ export default function AdminUsers() {
     }
   }
 
+  const handleDeleteUser = async (uid: string) => {
+    const confirmed = window.confirm('Delete this user profile? This removes the Firestore user record and cannot be undone.')
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      await deleteDoc(doc(db, 'users', uid))
+      setUsers((current) => current.filter((item) => item.uid !== uid))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete user.')
+    }
+  }
+
   if (!user) {
     return <div className="p-6 text-center">Please sign in to view this page.</div>
   }
@@ -69,6 +83,7 @@ export default function AdminUsers() {
                 <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="px-4 py-3 font-semibold">UID</th>
                 <th className="px-4 py-3 font-semibold">Role</th>
+                <th className="px-4 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -86,6 +101,15 @@ export default function AdminUsers() {
                       <option value="admin">Admin</option>
                       <option value="doctor">Doctor</option>
                     </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteUser(item.uid)}
+                      className="rounded border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

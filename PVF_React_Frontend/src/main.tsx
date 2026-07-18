@@ -4,7 +4,6 @@ import { HashRouter, Routes, Route, Link, Navigate } from 'react-router'
 import './index.css'
 import Home from './pages/Home.tsx'
 import About from './pages/About.tsx'
-import Events from './pages/Events.tsx'
 import Registration from './pages/Registration.tsx'
 import Resources from './pages/Resources.tsx'
 import VisionCheck from './pages/VisionCheck.tsx'
@@ -12,6 +11,7 @@ import Register from './pages/Register.tsx'
 import LogIn from './pages/LogIn.tsx'
 import Participants from './pages/Participants.tsx'
 import AdminUsers from './pages/AdminUsers.tsx'
+import Dashboard from './pages/Dashboard.tsx'
 import { AuthProvider, useAuth } from './context/AuthContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 import { signOut } from 'firebase/auth'
@@ -24,7 +24,6 @@ function Nav() {
   const visibleLinks = [
     { to: '/', label: 'Home' },
     { to: '/about', label: 'About' },
-    { to: '/events', label: 'Events' },
     { to: '/register', label: 'Register' },
     { to: '/vision-check', label: 'Vision Check' },
     { to: '/resources', label: 'Resources' },
@@ -32,6 +31,10 @@ function Nav() {
 
   if (user && (role === 'doctor' || role === 'admin')) {
     visibleLinks.push({ to: '/participants', label: 'Participants' })
+  }
+
+  if (user && (role === 'doctor' || role === 'admin')) {
+    visibleLinks.push({ to: '/dashboard', label: 'Dashboard' })
   }
 
   const adminLinks = role === 'admin' ? [{ to: '/admin-users', label: 'Admin Users' }] : []
@@ -106,12 +109,12 @@ function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
-        <Route path="/events" element={<Events />} />
         <Route path="/vision-check" element={<VisionCheck />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/participants" element={<Participants />} />
         <Route path="/participants/:email" element={<Participants />} />
         <Route path="/admin-users" element={<AdminUsers />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

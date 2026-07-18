@@ -29,7 +29,7 @@ export default function Home() {
       </section>
 
       {/* Who We Serve */}
-      <section className="grid md:grid-cols-3 gap-6 mt-12">
+      {/* <section className="grid md:grid-cols-3 gap-6 mt-12">
         {[
           { title: 'Children', body: 'Ages 5–17 receive priority scheduling for vision screenings and glasses.' },
           { title: 'Families & Adults', body: 'Comprehensive screenings and connection to affordable vision care.' },
@@ -40,19 +40,19 @@ export default function Home() {
             <p className="mt-2 text-gray-700">{c.body}</p>
           </div>
         ))}
-      </section>
+      </section> */}
 
       {/* Next Event */}
-      <section className="mt-12 bg-blue-50 rounded-lg p-8 text-center">
+      {/* <section className="mt-12 bg-blue-50 rounded-lg p-8 text-center">
         <h2 className="text-2xl font-bold text-blue-800">Next Community Vision Event</h2>
         <p className="mt-2 text-gray-700">September 12 — Register online or on-site.</p>
         <Link to="/events" className="inline-block mt-4 text-blue-700 underline">
           View all events
         </Link>
-      </section>
+      </section> */}
 
       {/* Get Involved */}
-      <section className="mt-12 grid md:grid-cols-2 gap-6">
+      {/* <section className="mt-12 grid md:grid-cols-2 gap-6">
         <div className="border rounded-lg p-6">
           <h3 className="text-xl font-semibold">Get Involved</h3>
           <p className="mt-2 text-gray-700">
@@ -71,7 +71,7 @@ export default function Home() {
             Sign up
           </Link>
         </div>
-      </section>
+      </section> */}
     </div>
   )
 }

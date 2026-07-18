@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, getDocs, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 export type StationDecision = 'PASS' | 'FAIL' | 'REFERRAL' | 'FRAME';
@@ -437,6 +437,24 @@ export async function saveCustomers(customers: CustomerRecord[]): Promise<void> 
     }));
   } catch (error) {
     console.warn('Unable to save participants to Firestore; local storage was updated instead.', error);
+  }
+}
+
+export async function deleteCustomerByEmail(email: string): Promise<void> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    return;
+  }
+
+  const customers = await getCustomers();
+  const nextCustomers = customers.filter(customer => customer.Email?.toLowerCase() !== normalizedEmail);
+
+  await saveCustomers(nextCustomers);
+
+  try {
+    await deleteDoc(doc(db, 'participants', normalizedEmail));
+  } catch (error) {
+    console.warn('Unable to delete participant from Firestore; local storage was updated instead.', error);
   }
 }
 

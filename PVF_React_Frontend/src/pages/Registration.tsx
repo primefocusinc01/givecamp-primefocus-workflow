@@ -1,7 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import type { ReactNode } from 'react'
 import Button from '@mui/material/Button'
+import Accordion from '@mui/material/Accordion'
+import AccordionDetails from '@mui/material/AccordionDetails'
+import AccordionSummary from '@mui/material/AccordionSummary'
+import { getCustomers, saveCustomers, type CustomerRecord, type EventRecord, type StationStatus } from '../DataControl'
 
 type RegistrationForm = {
   event: string
@@ -55,7 +59,7 @@ type RegistrationForm = {
 type ContactField = 'guardianPhone' | 'guardianEmail'
 
 const createInitialForm = (): RegistrationForm => ({
-  event: '',
+  event: 'Community Vision Event',
   participantType: '',
   firstName: '',
   lastName: '',
@@ -103,11 +107,7 @@ const createInitialForm = (): RegistrationForm => ({
   signatureDate: new Date().toISOString().slice(0, 10),
 })
 
-const events = [
-  'Community Vision Event - September 12',
-  'Community Vision Event - October 10',
-  'Add me to the next available event',
-]
+const defaultEventName = 'Community Vision Event'
 
 const participantTypes = ['Child (Ages 5-17)', 'Adult (18+)']
 const communicationMethods = ['Phone', 'Text Message', 'Email']
@@ -156,6 +156,55 @@ const referralSources = [
   'Other',
 ]
 
+function buildStationStatuses(): StationStatus[] {
+  return [
+    {
+      id: 'check-in',
+      title: 'Station 1 – Check-In',
+      description: 'Verify registration, confirm consent, and assign the participant ID.',
+      status: 'current',
+    },
+    {
+      id: 'vision-screening',
+      title: 'Station 2 – Vision Screening',
+      description: 'Record vision screening results and route the participant to the next step.',
+      status: 'pending',
+    },
+    {
+      id: 'eye-exam',
+      title: 'Station 3 – Comprehensive Eye Exam',
+      description: 'Provide a full exam and note prescription or referral outcomes.',
+      status: 'pending',
+    },
+    {
+      id: 'frame-selection',
+      title: 'Station 4 – Frame Selection',
+      description: 'Record prescription details and frame selections for ordering.',
+      status: 'pending',
+    },
+    {
+      id: 'vision-success',
+      title: 'Station 5 – Vision Success',
+      description: 'Confirm next steps, referrals, and follow-up resources before departure.',
+      status: 'pending',
+    },
+  ]
+}
+
+function buildRegistrationEvent(participantEmail: string, eventName: string): EventRecord {
+  const today = new Date().toISOString().slice(0, 10)
+
+  return {
+    id: `${participantEmail}-${Date.now()}`,
+    participantEmail,
+    eventName: eventName || defaultEventName,
+    eventDate: today,
+    createdAt: new Date().toISOString(),
+    status: 'active',
+    stationStatuses: buildStationStatuses(),
+  }
+}
+
 function FieldLabel({ children, required = false }: { children: string; required?: boolean }) {
   return (
     <span className="text-sm font-semibold text-gray-800">
@@ -175,17 +224,26 @@ function Section({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-green-700">{eyebrow}</p>
-      <h2 className="mt-1 text-xl font-bold text-blue-800">{title}</h2>
-      <div className="mt-5 grid gap-4 md:grid-cols-2">{children}</div>
-    </section>
+    <Accordion defaultExpanded disableGutters className="rounded-lg border border-gray-200 bg-white shadow-sm before:hidden">
+      <AccordionSummary expandIcon={<span aria-hidden="true">▾</span>}>
+        <div className="text-left">
+          <p className="text-xs font-semibold uppercase tracking-wide text-green-700">{eyebrow}</p>
+          <h2 className="mt-1 text-xl font-bold text-blue-800">{title}</h2>
+        </div>
+      </AccordionSummary>
+      <AccordionDetails>
+        <div className="grid gap-4 md:grid-cols-2">{children}</div>
+      </AccordionDetails>
+    </Accordion>
   )
 }
 
 export default function Registration() {
   const [form, setForm] = useState<RegistrationForm>(() => createInitialForm())
   const [submitted, setSubmitted] = useState(false)
+  const [customers, setCustomers] = useState<CustomerRecord[]>([])
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const isChild = form.participantType === 'Child (Ages 5-17)'
   const phoneDigits = form.guardianPhone.replace(/\D/g, '')
@@ -205,7 +263,6 @@ export default function Registration() {
 
   const requiredValues = useMemo(() => {
     const requiredValues = [
-      form.event,
       form.participantType,
       form.firstName,
       form.lastName,
@@ -217,6 +274,7 @@ export default function Registration() {
       form.toldNeedsGlasses,
       form.visionInsurance,
       form.referralSource,
+      form.guardianEmail,
       form.electronicSignature,
       form.printedName,
       form.signatureDate,
@@ -285,15 +343,160 @@ export default function Registration() {
     setSubmitted(false)
   }
 
+  useEffect(() => {
+    let active = true
+
+    async function loadCustomers() {
+      const data = await getCustomers()
+      if (!active) return
+      setCustomers(data)
+      setLoading(false)
+    }
+
+    loadCustomers()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const buildCustomerFromForm = (): CustomerRecord => {
+    const email = form.guardianEmail.trim().toLowerCase()
+
+    return {
+      Email: email,
+      'First Name': form.firstName.trim(),
+      'Last Name': form.lastName.trim(),
+      'Participant Type': form.participantType,
+      'Date of Birth': form.dateOfBirth,
+      Age: form.age,
+      Gender: form.gender,
+      Race: form.race,
+      Ethnicity: form.ethnicity,
+      'Primary Language': form.primaryLanguage,
+      'Veteran Status': form.veteranStatus,
+      'Parent/Guardian Name': form.guardianName,
+      'Relationship to Participant': form.guardianRelationship,
+      'Phone Number': form.guardianPhone,
+      'Parent/Guardian Email': form.guardianEmail,
+      'Street Address': form.streetAddress,
+      City: form.city,
+      'State ': form.state,
+      'ZIP Code': form.zipCode,
+      'Preferred Method of Communication': form.preferredCommunication,
+      'School Name': form.schoolName,
+      'School District': form.schoolDistrict,
+      'Current Grade': form.currentGrade,
+      participant: {
+        id: `participant-${email}-${Date.now()}`,
+        participantType: form.participantType,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        dateOfBirth: form.dateOfBirth,
+        ageAtEvent: Number(form.age) || null,
+        demographics: {
+          gender: form.gender,
+          race: form.race,
+          ethnicity: form.ethnicity,
+          primaryLanguage: form.primaryLanguage,
+          veteranStatus: form.veteranStatus,
+          lgbtqIdentity: form.lgbtqIdentity,
+          disabilityStatus: form.disabilityStatus,
+        },
+        guardian: {
+          name: form.guardianName,
+          relationship: form.guardianRelationship,
+          phoneNumber: form.guardianPhone,
+          email: form.guardianEmail,
+        },
+        contact: {
+          preferredCommunication: form.preferredCommunication,
+          phoneNumber: form.guardianPhone,
+          email,
+        },
+        address: {
+          streetAddress: form.streetAddress,
+          city: form.city,
+          state: form.state,
+          zipCode: form.zipCode,
+        },
+        school: {
+          name: form.schoolName,
+          district: form.schoolDistrict,
+          currentGrade: form.currentGrade,
+        },
+        visionIntake: {
+          wearsGlasses: form.wearsGlasses,
+          glassesStatus: form.glassesStatus,
+          glassesStatusOther: form.glassesStatusOther,
+          wearsContacts: form.wearsContacts,
+          lastEyeExam: form.lastEyeExam,
+          eyeCareProvider: form.eyeCareProvider,
+          toldNeedsGlasses: form.toldNeedsGlasses,
+          currentConcerns: form.currentConcerns,
+          currentConcernsOther: form.currentConcernsOther,
+        },
+        insurance: {
+          visionInsurance: form.visionInsurance,
+          medicalInsuranceProvider: form.medicalInsuranceProvider,
+        },
+        resourceInterests: form.resourceInterests,
+        resourceOther: form.resourceOther,
+        referralSource: form.referralSource,
+        consents: {
+          consentToParticipate: form.consentParticipate,
+          photoVideoRelease: form.photoVideoRelease,
+          communicationAuthorization: form.communicationAuthorization,
+          acknowledgement: form.acknowledgement,
+          electronicSignature: form.electronicSignature,
+          printedName: form.printedName,
+          signatureDate: form.signatureDate,
+        },
+        checkedIn: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      Events: [buildRegistrationEvent(email, form.event)],
+    }
+  }
+
   const handleReset = () => {
     setForm(createInitialForm())
     setSubmitted(false)
+    setSaveError(null)
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!requiredFieldsComplete || phoneInvalid || emailInvalid) return
-    setSubmitted(true)
+
+    if (!form.guardianEmail.trim()) {
+      setSaveError('An email address is required to save a registration.')
+      return
+    }
+
+    const nextCustomer = buildCustomerFromForm()
+    const duplicateIndex = customers.findIndex(
+      (customer) => customer.Email?.toLowerCase() === String(nextCustomer.Email).toLowerCase(),
+    )
+
+    if (duplicateIndex !== -1) {
+      setSaveError('A participant with this email already exists. Please update the existing participant or use a different email.')
+      return
+    }
+
+    const nextCustomers = [...customers, nextCustomer]
+
+    try {
+      await saveCustomers(nextCustomers)
+      setCustomers(nextCustomers)
+      setSubmitted(true)
+      setSaveError(null)
+      setForm(createInitialForm())
+    } catch (error) {
+      console.error('Failed to save registration', error)
+      setSaveError('Unable to save registration. Please try again later.')
+    }
   }
 
   const inputClass = 'mt-1 w-full rounded border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100'
@@ -330,6 +533,18 @@ export default function Registration() {
     )
   }
 
+  if (loading) {
+    return (
+      <main className="bg-gray-50">
+        <div className="mx-auto max-w-6xl px-6 py-10">
+          <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-700 shadow-sm">
+            Loading registration form...
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="bg-gray-50">
       <div className="mx-auto max-w-6xl px-6 py-10">
@@ -355,16 +570,16 @@ export default function Registration() {
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+          {saveError ? (
+            <section className="rounded-lg border border-red-200 bg-red-50 p-5 text-red-700">
+              <p className="font-semibold">Unable to save registration</p>
+              <p className="mt-2">{saveError}</p>
+            </section>
+          ) : null}
           <Section eyebrow="Section 1" title="Event Registration">
-            <label>
-              <FieldLabel required>Select the Community Vision Event</FieldLabel>
-              <select value={form.event} onChange={handleInput('event')} className={selectClass} required>
-                <option value="">Select an event</option>
-                {events.map((eventName) => (
-                  <option key={eventName} value={eventName}>{eventName}</option>
-                ))}
-              </select>
-            </label>
+            <div className="rounded border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900 md:col-span-2">
+              This registration is for the Community Vision Event, so no event selection is needed.
+            </div>
 
             <label>
               <FieldLabel required>Participant Type</FieldLabel>
@@ -499,7 +714,7 @@ export default function Registration() {
                 const formField = field as keyof RegistrationForm
 
                 return isContactField(formField)
-                  ? renderContactInput(formField, label)
+                  ? renderContactInput(formField, label, formField === 'guardianEmail')
                   : (
                     <label key={field}>
                       <FieldLabel>{label}</FieldLabel>
@@ -760,7 +975,7 @@ export default function Registration() {
           <section className="mt-6 rounded-lg border border-green-200 bg-green-50 p-5">
             <h2 className="text-xl font-bold text-green-900">Registration preview received</h2>
             <p className="mt-2 text-green-900">
-              {form.firstName} {form.lastName} is registered in preview for {form.event || 'the selected event'}.
+              {form.firstName} {form.lastName} is registered in preview for {defaultEventName}.
               No data has been saved or sent.
             </p>
           </section>

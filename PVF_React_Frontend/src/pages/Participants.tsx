@@ -5,7 +5,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import { Link, useNavigate, useParams } from 'react-router';
-import { createDefaultParticipantProfile, getCustomers, saveCustomers, type CustomerRecord, type EventRecord, type ParticipantProfile, type StationDecision, type StationStatus } from '../DataControl';
+import { createDefaultParticipantProfile, deleteCustomerByEmail, getCustomers, saveCustomers, type CustomerRecord, type EventRecord, type ParticipantProfile, type StationDecision, type StationStatus } from '../DataControl';
 import { useAuth } from '../context/AuthContext';
 
 const stationTemplates = [
@@ -236,6 +236,30 @@ export default function Participants() {
     setEditing(false);
   };
 
+  const handleDeleteParticipant = async () => {
+    if (!selectedCustomer?.Email) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete participant ${selectedCustomer.Email}? This removes their record and all saved events.`)
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteCustomerByEmail(selectedCustomer.Email)
+      const remainingCustomers = customers.filter(customer => customer.Email?.toLowerCase() !== selectedCustomer.Email?.toLowerCase())
+      setCustomers(remainingCustomers)
+      setSelectedEmail(remainingCustomers[0]?.Email ?? '')
+      setFormData(remainingCustomers[0] ?? {})
+      setParticipantProfile(remainingCustomers[0]?.participant ?? createDefaultParticipantProfile())
+      setEditing(false)
+      navigate('/participants')
+    } catch (error) {
+      console.error('Failed deleting participant', error)
+    }
+  };
+
   const normalizeProfilePath = (path: string) => {
     return path.startsWith('participant.') ? path.slice('participant.'.length) : path;
   };
@@ -408,6 +432,50 @@ export default function Participants() {
       await saveCustomers(nextCustomers);
     } catch (error) {
       console.error('Failed saving participant after station update', error);
+    }
+  };
+
+  const updateEyeExamDecision = async (eventId: string, decision: StationDecision) => {
+    let nextCustomers: CustomerRecord[] = [];
+
+    setCustomers(currentCustomers => {
+      nextCustomers = currentCustomers.map(customer => {
+        if (customer.Email?.toLowerCase() !== selectedEmail.toLowerCase()) {
+          return customer;
+        }
+
+        return {
+          ...customer,
+          Events: (customer.Events ?? []).map(event => {
+            if (event.id !== eventId) {
+              return event;
+            }
+
+            return {
+              ...event,
+              stationStatuses: event.stationStatuses.map(station => {
+                if (station.id === 'eye-exam') {
+                  return { ...station, decision };
+                }
+
+                if (station.id === 'frame-selection') {
+                  return { ...station, pboReferralConfirmed: false, frameSelection: '' };
+                }
+
+                return station;
+              })
+            };
+          })
+        };
+      });
+
+      return nextCustomers;
+    });
+
+    try {
+      await saveCustomers(nextCustomers);
+    } catch (error) {
+      console.error('Failed saving participant after eye exam update', error);
     }
   };
 
@@ -792,12 +860,22 @@ export default function Participants() {
                   </h2>
                   <p className="text-gray-600">{selectedCustomer.Email}</p>
                 </div>
-                <button
-                  onClick={() => setEditing(prev => !prev)}
-                  className="rounded bg-blue-700 px-4 py-2 text-white"
-                >
-                  {editing ? 'Cancel' : 'Edit'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDeleteParticipant}
+                    className="rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                  >
+                    Delete participant
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditing(prev => !prev)}
+                    className="rounded bg-blue-700 px-4 py-2 text-white"
+                  >
+                    {editing ? 'Cancel' : 'Edit'}
+                  </button>
+                </div>
               </div>
 
               {editing ? (
@@ -828,7 +906,7 @@ export default function Participants() {
                             <label key={concern} className="flex items-start gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                               <input
                                 type="checkbox"
-                                checked={participant.visionIntake.currentConcerns.includes(concern)}
+                                checked={participantProfile.visionIntake.currentConcerns.includes(concern)}
                                 onChange={() => handleProfileArrayToggle('participant.visionIntake.currentConcerns', concern)}
                                 className="mt-1"
                               />
@@ -837,7 +915,7 @@ export default function Participants() {
                           ))}
                         </div>
                         <input
-                          value={participant.visionIntake.currentConcernsOther}
+                          value={participantProfile.visionIntake.currentConcernsOther}
                           onChange={(event) => handleProfileChange('participant.visionIntake.currentConcernsOther', event.target.value)}
                           placeholder="Other concern"
                           className="mt-3 w-full rounded border px-3 py-2"
@@ -851,7 +929,7 @@ export default function Participants() {
                             <label key={resource} className="flex items-start gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                               <input
                                 type="checkbox"
-                                checked={participant.resourceInterests.includes(resource)}
+                                checked={participantProfile.resourceInterests.includes(resource)}
                                 onChange={() => handleProfileArrayToggle('participant.resourceInterests', resource)}
                                 className="mt-1"
                               />
@@ -886,6 +964,7 @@ export default function Participants() {
 
                   <div className="mt-4 flex justify-end">
                     <button
+                      type="button"
                       onClick={handleSave}
                       className="rounded bg-green-700 px-4 py-2 text-white"
                     >
@@ -1077,22 +1156,7 @@ export default function Participants() {
                                             Exam outcome
                                             <select
                                               value={station.decision ?? ''}
-                                              onChange={(changeEvent) => {
-                                                const nextDecision = changeEvent.target.value as StationDecision;
-                                                const nextStationStatuses = event.stationStatuses.map(st => {
-                                                  if (st.id === station.id) {
-                                                    return { ...st, decision: nextDecision };
-                                                  }
-
-                                                  if (st.id === 'frame-selection') {
-                                                    return { ...st, pboReferralConfirmed: false, frameSelection: '' };
-                                                  }
-
-                                                  return st;
-                                                });
-
-                                                updateEvent(event.id, { stationStatuses: nextStationStatuses });
-                                              }}
+                                              onChange={(changeEvent) => updateEyeExamDecision(event.id, changeEvent.target.value as StationDecision)}
                                               className="mt-1 w-full rounded border px-3 py-2"
                                             >
                                               <option value="">Select outcome</option>
@@ -1106,15 +1170,25 @@ export default function Participants() {
                                       {station.id === 'frame-selection' && (
                                         <div className="mt-3 rounded border border-gray-200 bg-white p-3">
                                           {event.stationStatuses.find(candidate => candidate.id === 'eye-exam')?.decision === 'REFERRAL' ? (
-                                            <FormControlLabel
-                                              control={
-                                                <Checkbox
-                                                  checked={station.pboReferralConfirmed ?? false}
-                                                  onChange={(changeEvent) => updateEventStation(event.id, station.id, { pboReferralConfirmed: changeEvent.target.checked })}
-                                                />
-                                              }
-                                              label="PBO Referral"
-                                            />
+                                            <div className="space-y-2">
+                                              <FormControlLabel
+                                                control={
+                                                  <Checkbox
+                                                    checked={station.pboReferralConfirmed ?? false}
+                                                    onChange={(changeEvent) => updateEventStation(event.id, station.id, { pboReferralConfirmed: changeEvent.target.checked })}
+                                                  />
+                                                }
+                                                label="PBO Referral"
+                                              />
+                                              <a
+                                                href="https://portal.pbohio.org/civic2/PBO/Login.jsp"
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex text-sm font-medium text-blue-700 underline underline-offset-2"
+                                              >
+                                                Open Prevent Blindness Ohio referral portal
+                                              </a>
+                                            </div>
                                           ) : event.stationStatuses.find(candidate => candidate.id === 'eye-exam')?.decision === 'FRAME' ? (
                                             <label className="text-sm font-medium text-gray-700">
                                               Frame selection
