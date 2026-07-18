@@ -89,6 +89,8 @@ jobs:
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:${{ steps.tag.outputs.tag }}
           env_vars: |
             IMAGE_TAG=${{ steps.tag.outputs.tag }}
+          secrets: |
+            GOOGLE_CREDENTIALSJSON=firestore-credentials:latest
 
       - name: Show deployment URL
         run: |
