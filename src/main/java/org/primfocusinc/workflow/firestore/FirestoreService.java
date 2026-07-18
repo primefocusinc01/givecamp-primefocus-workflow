@@ -10,6 +10,7 @@ import com.google.cloud.firestore.QuerySnapshot;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,40 @@ public class FirestoreService {
   public FirestoreService()
       throws IOException {
     this.firestore = FirestoreManager.getInstance();
+  }
+
+
+  public void save(String collection, String documentId, Map<String, Object> data)
+          throws ExecutionException, InterruptedException {
+
+    firestore.collection(collection)
+            .document(documentId)
+            .set(data)
+            .get();
+  }
+
+  public void update(String collection, String documentId, Map<String, Object> data)
+          throws ExecutionException, InterruptedException {
+
+    firestore.collection(collection)
+            .document(documentId)
+            .update(data)
+            .get();
+  }
+
+  public Map<String, Object> findById(String collection, String documentId)
+          throws ExecutionException, InterruptedException {
+
+    DocumentSnapshot document = firestore.collection(collection)
+            .document(documentId)
+            .get()
+            .get();
+
+    if (!document.exists()) {
+      return null;
+    }
+
+    return document.getData();
   }
 
   public <T> T getDocument(String document, Class<T> tClass) {
