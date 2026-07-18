@@ -3,12 +3,12 @@ import { getAuth, GoogleAuthProvider, type User } from 'firebase/auth'
 import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'firebase/firestore'
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBkxV72Jefo-ZN9HXTTAApzWPiAuB-fn7w',
-  authDomain: 'prime-focus-services.firebaseapp.com',
-  projectId: 'prime-focus-services',
-  storageBucket: 'prime-focus-services.firebasestorage.app',
-  messagingSenderId: '939430515884',
-  appId: '1:939430515884:web:372f7c363f4af4be55bb09',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
 const app = initializeApp(firebaseConfig)
@@ -38,5 +38,5 @@ export async function createUserProfile(user: User, role?: UserRole) {
 }
 
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  console.warn('Firebase is not configured yet. Check the Firebase config values.')
+  console.warn('Firebase is not configured yet. Add VITE_FIREBASE_* values to your .env file.')
 }

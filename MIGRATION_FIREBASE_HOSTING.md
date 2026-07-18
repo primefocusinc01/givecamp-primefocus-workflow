@@ -53,100 +53,53 @@ Move the React frontend from the Spring Boot + Google Cloud Run container stack 
 
 ### 2.1 Move Firebase config to build-time env vars
 
-1. [ ] **Update `PVF_React_Frontend/src/firebase.ts`**
-   - Replace the hardcoded `firebaseConfig` object with values read from `import.meta.env`.
-   - Example:
-     ```ts
-     const firebaseConfig = {
-       apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-       authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-       projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-       storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-       messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-       appId: import.meta.env.VITE_FIREBASE_APP_ID,
-       measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
-     }
-     ```
+1. [x] **Update `PVF_React_Frontend/src/firebase.ts`**
+   - Replaced the hardcoded `firebaseConfig` object with values read from `import.meta.env`.
 
-2. [ ] **Update `PVF_React_Frontend/.env.example`**
-   - Keep all required `VITE_FIREBASE_*` variables.
+2. [x] **Update `PVF_React_Frontend/.env.example`**
+   - Populated all required `VITE_FIREBASE_*` variables with the public values for `prime-focus-services`.
 
-3. [ ] **Update `.gitignore`**
-   - Ensure `PVF_React_Frontend/.env` and any `.env.*.local` files are ignored.
-   - Do not commit real `.env` files.
+3. [x] **Update `.gitignore`**
+   - Added `PVF_React_Frontend/.env` and `.env.*.local` to `.gitignore`.
 
-4. [ ] **Document local setup**
-   - Add a note in the migration doc or README explaining that developers must copy `.env.example` to `.env` and fill in the public Firebase config values.
+4. [x] **Document local setup**
+   - Developers must copy `PVF_React_Frontend/.env.example` to `PVF_React_Frontend/.env` before running the app locally. The values are public, so the `.env` file is only for build-time injection.
 
 > **Note**: The Firebase config values are **public** by design. They identify the project; they do not grant access. The actual security comes from Firebase Auth and Firestore Security Rules.
 
 ### 2.2 Add Firestore Security Rules
 
-1. [ ] **Create `firestore.rules`** in the repo root
-   - Rules must enforce:
-     - Authenticated users can read/write their own `users/{uid}` document.
-     - Only users with `role == 'admin'` can read all `users` documents and update any `users/{uid}.role` field.
-     - Authenticated doctors/admins can read/write `participants`.
-     - Basic users have limited access (define based on product requirements).
-   - Example starter rules:
-     ```js
-     rules_version = '2';
-     service cloud.firestore {
-       match /databases/{database}/documents {
-         function isAuthenticated() {
-           return request.auth != null;
-         }
-         function isAdmin() {
-           return isAuthenticated() &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-         }
-         function isDoctor() {
-           return isAuthenticated() &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
-         }
-         function isOwner(userId) {
-           return isAuthenticated() && request.auth.uid == userId;
-         }
+1. [x] **Create `firestore.rules`** in the repo root
+   - Rules enforce:
+     - Authenticated users can create their own `users/{uid}` document with the default `basic-user` role.
+     - Users can read their own `users/{uid}` document.
+     - Users can update their own `users/{uid}` document but cannot change their `role`.
+     - Admins can read/write any `users/{uid}` document, including role changes.
+     - Admins and doctors can read/write `participants` and `events`.
 
-         match /users/{userId} {
-           allow read: if isOwner(userId) || isAdmin();
-           allow create: if isOwner(userId) || isAdmin();
-           allow update: if isOwner(userId) || isAdmin();
-           allow delete: if isAdmin();
-         }
+2. [x] **Create `firestore.indexes.json`**
+   - Empty indexes file; the app currently uses document ID lookups only.
 
-         match /participants/{participantId} {
-           allow read: if isAuthenticated() && (isAdmin() || isDoctor());
-           allow write: if isAuthenticated() && (isAdmin() || isDoctor());
-         }
-       }
-     }
-     ```
-   - Adjust participant access rules based on actual requirements (e.g., a participant might need to see their own record).
-
-2. [ ] **Create `firestore.indexes.json`** if needed
-   - Currently the app does simple document ID lookups. Add composite indexes only if queries are expanded later.
-
-3. [ ] **Add rules deploy to the workflow**
-   - `firebase deploy --only firestore:rules,hosting` (or deploy rules separately during testing).
+3. [x] **Wire rules into `firebase.json`**
+   - Added `firestore.rules` and `firestore.indexes.json` to `firebase.json` so they deploy with the hosting command.
 
 ### 2.3 Bootstrap the first admin
 
-1. [ ] **Document the bootstrap process**
+1. [x] **Document the bootstrap process**
    - Without the Spring Boot backend, the first admin must be created manually:
-     - Sign in to the app once to create the Firebase user.
-     - In the Firebase console, find the user's UID and create/update the `users/{uid}` document with `role: 'admin'`.
+     1. Sign in to the app once to create the Firebase user and a `users/{uid}` document with `role: 'basic-user'`.
+     2. In the Firebase console, go to **Firestore Database** → `users` collection → find your UID.
+     3. Change the `role` field value to `'admin'`.
+     4. Refresh the app; the `Admin Users` link should appear and the `AdminUsers` page should load.
    - Alternative: add a one-time Cloud Function or manual script, but for a small fixed admin team the console approach is simplest.
 
 2. [ ] **Test the bootstrap**
-   - After creating the first admin doc, verify the `AdminUsers` page loads and can promote other users to admin/doctor.
+   - After the rules and hosting are redeployed, create a test user, promote it to admin in Firestore, and verify the `AdminUsers` page loads and can promote other users to `admin` or `doctor`.
 
 ### 2.4 Router consideration (optional)
 
-1. [ ] **Decide on `HashRouter` vs `BrowserRouter`**
-   - The app currently uses `HashRouter`, which works on Firebase Hosting without any rewrite rules.
-   - `BrowserRouter` is cleaner for URLs but requires the Hosting rewrite rule `"source": "**", "destination": "/index.html"` in `firebase.json`.
-   - Recommendation: keep `HashRouter` for the migration to minimize changes, then switch to `BrowserRouter` in a follow-up if desired.
+1. [x] **Decide on `HashRouter` vs `BrowserRouter`**
+   - Decision: keep `HashRouter` for the migration to minimize changes. The `firebase.json` rewrite rule is still included for future `BrowserRouter` use.
 
 ## Phase 3: GitHub Actions Deployment Workflow
 
