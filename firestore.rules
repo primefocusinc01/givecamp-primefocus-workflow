@@ -21,6 +21,49 @@ service cloud.firestore {
       return isAdmin() || isDoctor();
     }
 
+    function hasPublicRegistrationShape() {
+      return request.resource.data.participant is map
+        && request.resource.data.participant.contact is map
+        && request.resource.data.participant.contact.email is string
+        && request.resource.data.participant.contact.email.size() > 3
+        && request.resource.data.participant.contact.email.size() <= 254
+        && request.resource.data.participant.firstName is string
+        && request.resource.data.participant.firstName.size() > 0
+        && request.resource.data.participant.firstName.size() <= 100
+        && request.resource.data.participant.lastName is string
+        && request.resource.data.participant.lastName.size() > 0
+        && request.resource.data.participant.lastName.size() <= 100
+        && request.resource.data.participant.consents is map
+        && request.resource.data.participant.consents.consentToParticipate == true
+        && request.resource.data.participant.consents.communicationAuthorization == true
+        && request.resource.data.participant.consents.acknowledgement == true;
+    }
+
+    function hasPublicEventShape() {
+      return request.resource.data.participantId is string
+        && request.resource.data.participantId.size() > 0
+        && request.resource.data.participantEmail is string
+        && request.resource.data.participantEmail.size() > 3
+        && request.resource.data.participantEmail.size() <= 254
+        && request.resource.data.eventName is string
+        && request.resource.data.eventName.size() > 0
+        && request.resource.data.eventName.size() <= 120
+        && request.resource.data.eventDate is string
+        && request.resource.data.status == 'active';
+    }
+
+    function hasPublicStationStatusShape() {
+      return request.resource.data.participantId is string
+        && request.resource.data.participantId.size() > 0
+        && request.resource.data.eventId is string
+        && request.resource.data.eventId.size() > 0
+        && request.resource.data.id is string
+        && request.resource.data.id.size() > 0
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.status in ['pending', 'current', 'complete', 'skipped'];
+    }
+
     match /users/{userId} {
       // New users can create their own profile with the default role only.
       allow create: if isAuthenticated()
@@ -46,19 +89,24 @@ service cloud.firestore {
     }
 
     match /participants/{participantId} {
-       // Only admins and doctors can read participant records.
-      allow read: if isAdminOrDoctor();
-      allow write; // every usser needs to be able to register hence allowing them to write to /participants
+      // Public registration can create participant records only.
+      // Admins and doctors can read and manage participant records.
+      allow create: if hasPublicRegistrationShape();
+      allow read, update, delete: if isAdminOrDoctor();
     }
 
     match /events/{eventId} {
-      // Only admins and doctors can read or write event records.
-      allow read, write: if isAdminOrDoctor();
+      // Public registration can create event records only.
+      // Admins and doctors can read and manage event records.
+      allow create: if hasPublicEventShape();
+      allow read, update, delete: if isAdminOrDoctor();
     }
 
     match /stationStatuses/{statusId} {
-      // Only admins and doctors can read or write station status records.
-      allow read, write: if isAdminOrDoctor();
+      // Public registration can create initial station statuses only.
+      // Admins and doctors can read and manage station status records.
+      allow create: if hasPublicStationStatusShape();
+      allow read, update, delete: if isAdminOrDoctor();
     }
   }
 }

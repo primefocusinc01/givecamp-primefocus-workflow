@@ -481,7 +481,6 @@ export async function saveCustomers(customers: CustomerRecord[]): Promise<void> 
 
 export async function saveRegistrationCustomer(customer: CustomerRecord): Promise<void> {
   await saveCustomerToFirebase(customer);
-  saveCustomerToLocalStorage(customer);
 }
 
 async function saveCustomerToFirebase(customer: CustomerRecord, fallbackDocumentId?: string): Promise<void> {
@@ -501,27 +500,6 @@ async function saveCustomerToFirebase(customer: CustomerRecord, fallbackDocument
 
   await setDoc(doc(db, 'participants', documentId), payload, { merge: true });
   await Promise.all((Events ?? []).map(event => saveEventDocToFirebase(event, participantId)));
-}
-
-function saveCustomerToLocalStorage(customer: CustomerRecord) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const normalizedEmail = customer.Email?.trim().toLowerCase();
-  const storedCustomers = readStoredCustomers();
-  const nextCustomers = normalizedEmail
-    ? [
-      ...storedCustomers.filter(storedCustomer => storedCustomer.Email?.trim().toLowerCase() !== normalizedEmail),
-      customer
-    ]
-    : [...storedCustomers, customer];
-
-  window.localStorage.setItem(customerStorageKey, JSON.stringify(nextCustomers.map(storedCustomer => ({
-    ...storedCustomer,
-    participant: storedCustomer.participant ? toSerializable(storedCustomer.participant) as ParticipantProfile : undefined,
-    Events: (storedCustomer.Events ?? []).map(normalizeEventRecord)
-  }))));
 }
 
 export async function deleteCustomerByEmail(email: string): Promise<void> {
