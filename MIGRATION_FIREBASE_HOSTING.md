@@ -21,10 +21,33 @@ Move the React frontend from the Spring Boot + Google Cloud Run container stack 
 
 ## Prerequisites
 
-- [x] Firebase project `prime-focus-services` has Hosting enabled.
 - [x] Local `firebase-tools` CLI installed (`npm install -g firebase-tools` or use `npx firebase-tools`).
-- [x] Owner/Editor access to the Firebase project and the GCP project `prime-focus-services`.
-- [ ] GitHub repository has permission to add/update repository secrets and Actions workflows.
+- [x] GitHub repository has permission to add/update repository secrets and Actions workflows.
+
+## New Account Re-Spinup
+
+The original Google/Firebase account was locked, so the project is being
+re-created in a new account with project ID `primefocus-workflow`.
+
+### New account setup checklist
+
+1. [ ] Create a new Google Cloud project named `primefocus-workflow`.
+2. [ ] Add Firebase to the project and create a web app named `primefocus-workflow`.
+3. [ ] Enable Firebase Authentication (Email/Password and Google providers).
+4. [ ] Create a Firestore database in native mode.
+5. [ ] Enable Firebase Hosting.
+6. [ ] Copy the new Firebase web app config values (API key, auth domain, project ID, storage bucket, messaging sender ID, app ID).
+7. [ ] Create a new `github-deploy-sa` service account and grant the roles listed in `DEPLOYMENT_SETUP.md`.
+8. [ ] Download a JSON key and add it to GitHub Secrets as `FIREBASE_SERVICE_ACCOUNT_KEY`.
+9. [ ] Update GitHub Variables with the new `VITE_FIREBASE_*` values.
+10. [ ] Deploy the app and Firestore rules to the new project.
+11. [ ] Bootstrap the first admin user in the Firestore console.
+
+### Configuration changes already made
+
+- `.firebaserc` updated to project `primefocus-workflow`.
+- `firestore.rules` syntax error fixed (`allow write;` → `allow write: if isAuthenticated();`).
+- Documentation updated to reference `primefocus-workflow`.
 
 ## Phase 1: Firebase Hosting Setup (No Code Changes to App Logic)
 
@@ -251,5 +274,6 @@ Move the React frontend from the Spring Boot + Google Cloud Run container stack 
 | Phase 2: Frontend Hardening | Completed | Firestore rules deployed; first-admin bootstrap documented |
 | Phase 3: GitHub Actions Workflow | Completed | Workflow tested; preview URL: https://prime-focus-services--ci-test-kt7za2ib.web.app |
 | Phase 4: Parallel Testing | Completed | Live URL: https://prime-focus-services.web.app |
-| Phase 5: Remove Spring Boot/Cloud Run | Code/docs complete | GCP teardown pending |
+| Phase 5: Remove Spring Boot/Cloud Run | Code/docs complete | Old account locked; GCP teardown may not be possible |
 | Phase 6: Final Verification | Not started | |
+| Phase 7: New Account Re-Spinup | In progress | New project ID: `primefocus-workflow` |

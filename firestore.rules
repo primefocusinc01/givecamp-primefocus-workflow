@@ -48,7 +48,8 @@ service cloud.firestore {
     match /participants/{participantId} {
        // Only admins and doctors can read participant records.
       allow read: if isAdminOrDoctor();
-      allow write; // every usser needs to be able to register hence allowing them to write to /participants
+      // Every authenticated user needs to be able to register, so allow writes to /participants.
+      allow write: if isAuthenticated();
     }
 
     match /events/{eventId} {

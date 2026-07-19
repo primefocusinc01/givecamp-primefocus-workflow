@@ -19,7 +19,7 @@ The `VITE_FIREBASE_*` values are public Firebase config values, not secrets.
 - Workflow: `.github/workflows/deploy-firebase-hosting.yml`, manual `workflow_dispatch` only.
 - Trigger with `channel` = `live` to deploy to the live channel, or a preview channel name
   (e.g., `ci-test`) for a temporary preview URL.
-- Deploys to Firebase project `prime-focus-services`.
+- Deploys to Firebase project `primefocus-workflow`.
 - Uses `github-deploy-sa` via the `FIREBASE_SERVICE_ACCOUNT_KEY` GitHub secret.
 - Public Firebase config values are stored as GitHub Variables (`VITE_FIREBASE_*`).
 - Deploys both Firestore security rules and the hosting build.

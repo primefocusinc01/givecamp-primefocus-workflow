@@ -5,7 +5,7 @@ and Firestore security rules to Firebase Hosting.
 
 ## Prerequisites
 
-1. A Firebase project linked to the Google Cloud project `prime-focus-services`.
+1. A Firebase project linked to the Google Cloud project `primefocus-workflow`.
 2. Firebase Authentication enabled with at least **Email/Password** and **Google** providers.
 3. Firebase Hosting enabled in the project.
 4. Firestore database created in the project.
@@ -44,16 +44,16 @@ The Firebase config values are public project identifiers, so they are stored as
 | Variable Name | Value |
 |---------------|-------|
 | `VITE_FIREBASE_API_KEY` | `AIzaSyBkxV72Jefo-ZN9HXTTAApzWPiAuB-fn7w` |
-| `VITE_FIREBASE_AUTH_DOMAIN` | `prime-focus-services.firebaseapp.com` |
-| `VITE_FIREBASE_PROJECT_ID` | `prime-focus-services` |
-| `VITE_FIREBASE_STORAGE_BUCKET` | `prime-focus-services.firebasestorage.app` |
+| `VITE_FIREBASE_AUTH_DOMAIN` | `primefocus-workflow.firebaseapp.com` |
+| `VITE_FIREBASE_PROJECT_ID` | `primefocus-workflow` |
+| `VITE_FIREBASE_STORAGE_BUCKET` | `primefocus-workflow.firebasestorage.app` |
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | `939430515884` |
 | `VITE_FIREBASE_APP_ID` | `1:939430515884:web:372f7c363f4af4be55bb09` |
 
 ## Service Account Roles
 
 The `github-deploy-sa` service account needs the following roles on the
-`prime-focus-services` project:
+`primefocus-workflow` project:
 
 - `roles/firebasehosting.admin` — deploy to Firebase Hosting
 - `roles/firebase.editor` — manage Firebase web app and project resources
@@ -63,8 +63,8 @@ The `github-deploy-sa` service account needs the following roles on the
 To add a role:
 
 ```bash
-gcloud projects add-iam-policy-binding prime-focus-services \
-  --member="serviceAccount:github-deploy-sa@prime-focus-services.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding primefocus-workflow \
+  --member="serviceAccount:github-deploy-sa@primefocus-workflow.iam.gserviceaccount.com" \
   --role="ROLE_NAME" \
   --condition=None
 ```
@@ -90,7 +90,7 @@ The `.env` file is gitignored. It contains public Firebase config values only.
 
 ## Live Site
 
-Production URL: https://prime-focus-services.web.app
+Production URL: https://primefocus-workflow.web.app
 
 ## Troubleshooting
 
@@ -109,5 +109,5 @@ Verify that `github-deploy-sa` has `roles/firebasehosting.admin` on the project.
 
 ### Google sign-in fails on a preview channel
 
-Add the preview channel domain (e.g., `prime-focus-services--ci-test-abc123.web.app`)
+Add the preview channel domain (e.g., `primefocus-workflow--ci-test-abc123.web.app`)
 to the Firebase Auth authorized domains list in the Firebase console.
