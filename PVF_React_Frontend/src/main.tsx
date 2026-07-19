@@ -31,9 +31,6 @@ function Nav() {
 
   if (user && (role === 'doctor' || role === 'admin')) {
     visibleLinks.push({ to: '/participants', label: 'Participants' })
-  }
-
-  if (user && (role === 'doctor' || role === 'admin')) {
     visibleLinks.push({ to: '/dashboard', label: 'Dashboard' })
   }
 
@@ -113,8 +110,8 @@ function AppRoutes() {
         <Route path="/resources" element={<Resources />} />
         <Route path="/participants" element={<Participants />} />
         <Route path="/participants/:email" element={<Participants />} />
-        <Route path="/admin-users" element={<AdminUsers />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/admin-users" element={<AdminUsers />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
