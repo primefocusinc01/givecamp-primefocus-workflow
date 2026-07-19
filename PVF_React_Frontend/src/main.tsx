@@ -12,6 +12,7 @@ import Register from './pages/Register.tsx'
 import LogIn from './pages/LogIn.tsx'
 import Participants from './pages/Participants.tsx'
 import AdminUsers from './pages/AdminUsers.tsx'
+import Dashboard from './pages/Dashboard.tsx'
 import { AuthProvider, useAuth } from './context/AuthContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 import { signOut } from 'firebase/auth'
@@ -32,6 +33,7 @@ function Nav() {
 
   if (user && (role === 'doctor' || role === 'admin')) {
     visibleLinks.push({ to: '/participants', label: 'Participants' })
+    visibleLinks.push({ to: '/dashboard', label: 'Dashboard' })
   }
 
   const adminLinks = role === 'admin' ? [{ to: '/admin-users', label: 'Admin Users' }] : []
@@ -111,6 +113,7 @@ function AppRoutes() {
         <Route path="/resources" element={<Resources />} />
         <Route path="/participants" element={<Participants />} />
         <Route path="/participants/:email" element={<Participants />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin-users" element={<AdminUsers />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />

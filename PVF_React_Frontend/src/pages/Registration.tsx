@@ -2,6 +2,10 @@ import { useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import type { ReactNode } from 'react'
 import Button from '@mui/material/Button'
+import Accordion from '@mui/material/Accordion'
+import AccordionDetails from '@mui/material/AccordionDetails'
+import AccordionSummary from '@mui/material/AccordionSummary'
+import { saveRegistrationCustomer, type CustomerRecord, type EventRecord, type ParticipantProfile, type StationStatus } from '../DataControl'
 
 type RegistrationForm = {
   event: string
@@ -54,8 +58,20 @@ type RegistrationForm = {
 
 type ContactField = 'guardianPhone' | 'guardianEmail'
 
+type RegistrationSubmissionPayload = {
+  participant: ParticipantProfile
+  requestedEventName: string
+  submissionMeta: {
+    source: 'public-registration-page'
+    preparedAt: string
+    clientVersion: 'registration-page-v1'
+  }
+}
+
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+
 const createInitialForm = (): RegistrationForm => ({
-  event: '',
+  event: 'Community Vision Event',
   participantType: '',
   firstName: '',
   lastName: '',
@@ -103,11 +119,7 @@ const createInitialForm = (): RegistrationForm => ({
   signatureDate: new Date().toISOString().slice(0, 10),
 })
 
-const events = [
-  'Community Vision Event - September 12',
-  'Community Vision Event - October 10',
-  'Add me to the next available event',
-]
+const defaultEventName = 'Community Vision Event'
 
 const participantTypes = ['Child (Ages 5-17)', 'Adult (18+)']
 const communicationMethods = ['Phone', 'Text Message', 'Email']
@@ -144,6 +156,110 @@ const resourceOptions = [
 
 const isContactField = (field: keyof RegistrationForm): field is ContactField =>
   field === 'guardianPhone' || field === 'guardianEmail'
+
+const normalizePhoneNumber = (phoneNumber: string) => {
+  const digits = phoneNumber.replace(/\D/g, '')
+  return digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
+}
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase()
+
+const normalizeText = (value: string) => value.trim()
+
+const createParticipantId = (form: RegistrationForm, preparedAt: string) => {
+  const readableName = `${form.firstName}-${form.lastName}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+  const timestamp = preparedAt.replace(/[^0-9]/g, '').slice(0, 14)
+
+  return `participant-${readableName || 'registration'}-${timestamp}`
+}
+
+const createRegistrationSubmissionPayload = (form: RegistrationForm): RegistrationSubmissionPayload => {
+  const preparedAt = new Date().toISOString()
+  const normalizedPhone = normalizePhoneNumber(form.guardianPhone)
+  const normalizedEmail = normalizeEmail(form.guardianEmail)
+  const ageAtEvent = Number.parseInt(form.age, 10)
+
+  return {
+    participant: {
+      id: createParticipantId(form, preparedAt),
+      participantType: form.participantType,
+      firstName: normalizeText(form.firstName),
+      lastName: normalizeText(form.lastName),
+      dateOfBirth: form.dateOfBirth,
+      ageAtEvent: Number.isFinite(ageAtEvent) ? ageAtEvent : null,
+      demographics: {
+        gender: form.gender,
+        race: form.race,
+        ethnicity: form.ethnicity,
+        primaryLanguage: form.primaryLanguage,
+        veteranStatus: form.veteranStatus,
+        lgbtqIdentity: form.lgbtqIdentity,
+        disabilityStatus: form.disabilityStatus,
+      },
+      guardian: {
+        name: form.participantType === 'Child (Ages 5-17)' ? normalizeText(form.guardianName) : '',
+        relationship: form.participantType === 'Child (Ages 5-17)' ? normalizeText(form.guardianRelationship) : '',
+        phoneNumber: form.participantType === 'Child (Ages 5-17)' ? normalizedPhone : '',
+        email: form.participantType === 'Child (Ages 5-17)' ? normalizedEmail : '',
+      },
+      contact: {
+        preferredCommunication: form.preferredCommunication,
+        phoneNumber: normalizedPhone,
+        email: normalizedEmail,
+      },
+      address: {
+        streetAddress: normalizeText(form.streetAddress),
+        city: normalizeText(form.city),
+        state: normalizeText(form.state),
+        zipCode: normalizeText(form.zipCode),
+      },
+      school: {
+        name: form.participantType === 'Child (Ages 5-17)' ? normalizeText(form.schoolName) : '',
+        district: form.participantType === 'Child (Ages 5-17)' ? normalizeText(form.schoolDistrict) : '',
+        currentGrade: form.participantType === 'Child (Ages 5-17)' ? normalizeText(form.currentGrade) : '',
+      },
+      visionIntake: {
+        wearsGlasses: form.wearsGlasses,
+        glassesStatus: form.glassesStatus,
+        glassesStatusOther: normalizeText(form.glassesStatusOther),
+        wearsContacts: form.wearsContacts,
+        lastEyeExam: form.lastEyeExam,
+        eyeCareProvider: normalizeText(form.eyeCareProvider),
+        toldNeedsGlasses: form.toldNeedsGlasses,
+        currentConcerns: form.currentConcerns,
+        currentConcernsOther: normalizeText(form.currentConcernsOther),
+      },
+      insurance: {
+        visionInsurance: form.visionInsurance,
+        medicalInsuranceProvider: normalizeText(form.medicalInsuranceProvider),
+      },
+      resourceInterests: form.resourceInterests,
+      resourceOther: normalizeText(form.resourceOther),
+      referralSource: form.referralSource,
+      consents: {
+        consentToParticipate: form.consentParticipate,
+        photoVideoRelease: form.photoVideoRelease,
+        communicationAuthorization: form.communicationAuthorization,
+        acknowledgement: form.acknowledgement,
+        electronicSignature: normalizeText(form.electronicSignature),
+        printedName: normalizeText(form.printedName),
+        signatureDate: form.signatureDate,
+      },
+      checkedIn: false,
+      createdAt: preparedAt,
+      updatedAt: preparedAt,
+    },
+    requestedEventName: form.event,
+    submissionMeta: {
+      source: 'public-registration-page',
+      preparedAt,
+      clientVersion: 'registration-page-v1',
+    },
+  }
+}
 const referralSources = [
   'Social Media',
   'School',
@@ -155,6 +271,88 @@ const referralSources = [
   'Prevent Blindness Ohio',
   'Other',
 ]
+
+function buildStationStatuses(): StationStatus[] {
+  return [
+    {
+      id: 'check-in',
+      title: 'Station 1 – Check-In',
+      description: 'Verify registration, confirm consent, and assign the participant ID.',
+      status: 'current',
+    },
+    {
+      id: 'vision-screening',
+      title: 'Station 2 – Vision Screening',
+      description: 'Record vision screening results and route the participant to the next step.',
+      status: 'pending',
+    },
+    {
+      id: 'eye-exam',
+      title: 'Station 3 – Comprehensive Eye Exam',
+      description: 'Provide a full exam and note prescription or referral outcomes.',
+      status: 'pending',
+    },
+    {
+      id: 'frame-selection',
+      title: 'Station 4 – Frame Selection',
+      description: 'Record prescription details and frame selections for ordering.',
+      status: 'pending',
+    },
+    {
+      id: 'vision-success',
+      title: 'Station 5 – Vision Success',
+      description: 'Confirm next steps, referrals, and follow-up resources before departure.',
+      status: 'pending',
+    },
+  ]
+}
+
+function buildRegistrationEvent(payload: RegistrationSubmissionPayload): EventRecord {
+  const today = new Date().toISOString().slice(0, 10)
+
+  return {
+    id: `${payload.participant.contact.email}-${Date.now()}`,
+    participantEmail: payload.participant.contact.email,
+    eventName: payload.requestedEventName || defaultEventName,
+    eventDate: today,
+    createdAt: payload.submissionMeta.preparedAt,
+    status: 'active',
+    stationStatuses: buildStationStatuses(),
+  }
+}
+
+function createCustomerRecordFromPayload(payload: RegistrationSubmissionPayload): CustomerRecord {
+  const { participant } = payload
+
+  return {
+    id: participant.id,
+    Email: participant.contact.email,
+    'First Name': participant.firstName,
+    'Last Name': participant.lastName,
+    'Participant Type': participant.participantType,
+    'Date of Birth': participant.dateOfBirth,
+    Age: String(participant.ageAtEvent ?? ''),
+    Gender: participant.demographics.gender,
+    Race: participant.demographics.race,
+    Ethnicity: participant.demographics.ethnicity,
+    'Primary Language': participant.demographics.primaryLanguage,
+    'Veteran Status': participant.demographics.veteranStatus,
+    'Parent/Guardian Name': participant.guardian.name,
+    'Relationship to Participant': participant.guardian.relationship,
+    'Phone Number': participant.contact.phoneNumber,
+    'Parent/Guardian Email': participant.contact.email,
+    'Street Address': participant.address.streetAddress,
+    City: participant.address.city,
+    'State ': participant.address.state,
+    'ZIP Code': participant.address.zipCode,
+    'Preferred Method of Communication': participant.contact.preferredCommunication,
+    'School Name': participant.school.name,
+    'School District': participant.school.district,
+    'Current Grade': participant.school.currentGrade,
+    participant,
+    Events: [buildRegistrationEvent(payload)],
+  }
+}
 
 function FieldLabel({ children, required = false }: { children: string; required?: boolean }) {
   return (
@@ -175,17 +373,26 @@ function Section({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-green-700">{eyebrow}</p>
-      <h2 className="mt-1 text-xl font-bold text-blue-800">{title}</h2>
-      <div className="mt-5 grid gap-4 md:grid-cols-2">{children}</div>
-    </section>
+    <Accordion defaultExpanded disableGutters className="rounded-lg border border-gray-200 bg-white shadow-sm before:hidden">
+      <AccordionSummary expandIcon={<span aria-hidden="true">▾</span>}>
+        <div className="text-left">
+          <p className="text-xs font-semibold uppercase tracking-wide text-green-700">{eyebrow}</p>
+          <h2 className="mt-1 text-xl font-bold text-blue-800">{title}</h2>
+        </div>
+      </AccordionSummary>
+      <AccordionDetails>
+        <div className="grid gap-4 md:grid-cols-2">{children}</div>
+      </AccordionDetails>
+    </Accordion>
   )
 }
 
 export default function Registration() {
   const [form, setForm] = useState<RegistrationForm>(() => createInitialForm())
   const [submitted, setSubmitted] = useState(false)
+  const [submissionPayload, setSubmissionPayload] = useState<RegistrationSubmissionPayload | null>(null)
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [saveError, setSaveError] = useState('')
 
   const isChild = form.participantType === 'Child (Ages 5-17)'
   const phoneDigits = form.guardianPhone.replace(/\D/g, '')
@@ -205,7 +412,6 @@ export default function Registration() {
 
   const requiredValues = useMemo(() => {
     const requiredValues = [
-      form.event,
       form.participantType,
       form.firstName,
       form.lastName,
@@ -217,6 +423,7 @@ export default function Registration() {
       form.toldNeedsGlasses,
       form.visionInsurance,
       form.referralSource,
+      form.guardianEmail,
       form.electronicSignature,
       form.printedName,
       form.signatureDate,
@@ -257,6 +464,9 @@ export default function Registration() {
   const updateField = (field: keyof RegistrationForm, value: string | boolean | string[]) => {
     setForm((current) => ({ ...current, [field]: value }))
     setSubmitted(false)
+    setSubmissionPayload(null)
+    setSaveStatus('idle')
+    setSaveError('')
   }
 
   const handleInput =
@@ -283,17 +493,37 @@ export default function Registration() {
       return { ...current, [field]: nextValues }
     })
     setSubmitted(false)
+    setSubmissionPayload(null)
+    setSaveStatus('idle')
+    setSaveError('')
   }
 
   const handleReset = () => {
     setForm(createInitialForm())
     setSubmitted(false)
+    setSubmissionPayload(null)
+    setSaveStatus('idle')
+    setSaveError('')
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!requiredFieldsComplete || phoneInvalid || emailInvalid) return
-    setSubmitted(true)
+
+    const payload = createRegistrationSubmissionPayload(form)
+    setSubmissionPayload(payload)
+    setSaveStatus('saving')
+    setSaveError('')
+
+    try {
+      await saveRegistrationCustomer(createCustomerRecordFromPayload(payload))
+      setSubmitted(true)
+      setSaveStatus('saved')
+    } catch (error) {
+      console.error('Failed to save registration', error)
+      setSaveStatus('error')
+      setSaveError('Unable to save this registration to the database. Please try again or contact an administrator.')
+    }
   }
 
   const inputClass = 'mt-1 w-full rounded border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100'
@@ -350,21 +580,21 @@ export default function Registration() {
           <aside className="rounded-lg border border-blue-100 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-gray-700">Required progress</p>
             <p className="mt-2 text-3xl font-bold text-blue-800">{completionCount}</p>
-            <p className="mt-2 text-sm text-gray-600">Preview mode. Information is not saved yet.</p>
+            <p className="mt-2 text-sm text-gray-600">Complete required fields to save the registration.</p>
           </aside>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+          {saveStatus === 'error' ? (
+            <section className="rounded-lg border border-red-200 bg-red-50 p-5 text-red-700">
+              <p className="font-semibold">Unable to save registration</p>
+              <p className="mt-2">{saveError}</p>
+            </section>
+          ) : null}
           <Section eyebrow="Section 1" title="Event Registration">
-            <label>
-              <FieldLabel required>Select the Community Vision Event</FieldLabel>
-              <select value={form.event} onChange={handleInput('event')} className={selectClass} required>
-                <option value="">Select an event</option>
-                {events.map((eventName) => (
-                  <option key={eventName} value={eventName}>{eventName}</option>
-                ))}
-              </select>
-            </label>
+            <div className="rounded border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900 md:col-span-2">
+              This registration is for the Community Vision Event, so no event selection is needed.
+            </div>
 
             <label>
               <FieldLabel required>Participant Type</FieldLabel>
@@ -499,7 +729,7 @@ export default function Registration() {
                 const formField = field as keyof RegistrationForm
 
                 return isContactField(formField)
-                  ? renderContactInput(formField, label)
+                  ? renderContactInput(formField, label, formField === 'guardianEmail')
                   : (
                     <label key={field}>
                       <FieldLabel>{label}</FieldLabel>
@@ -740,17 +970,17 @@ export default function Registration() {
 
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
             <div>
-              <h2 className="text-lg font-bold text-blue-900">Registration Preview</h2>
+              <h2 className="text-lg font-bold text-blue-900">Registration Submission</h2>
               <p className="text-sm text-gray-600">
-                This page is ready for review. Submission currently confirms the preview only.
+                This page is ready to save the registration to the participant database.
               </p>
             </div>
             <div className="flex gap-3">
               <Button type="button" variant="outlined" onClick={handleReset}>
                 Reset
               </Button>
-              <Button type="submit" variant="contained" disabled={!canReviewRegistration}>
-                Review Registration
+              <Button type="submit" variant="contained" disabled={!canReviewRegistration || saveStatus === 'saving'}>
+                {saveStatus === 'saving' ? 'Saving...' : 'Save Registration'}
               </Button>
             </div>
           </div>
@@ -758,11 +988,20 @@ export default function Registration() {
 
         {submitted ? (
           <section className="mt-6 rounded-lg border border-green-200 bg-green-50 p-5">
-            <h2 className="text-xl font-bold text-green-900">Registration preview received</h2>
+            <h2 className="text-xl font-bold text-green-900">Registration saved</h2>
             <p className="mt-2 text-green-900">
-              {form.firstName} {form.lastName} is registered in preview for {form.event || 'the selected event'}.
-              No data has been saved or sent.
+              {submissionPayload?.participant.firstName} {submissionPayload?.participant.lastName} has been saved for {submissionPayload?.requestedEventName || defaultEventName}.
             </p>
+            {submissionPayload ? (
+              <details className="mt-4 rounded border border-green-200 bg-white p-4">
+                <summary className="cursor-pointer text-sm font-semibold text-green-900">
+                  View prepared registration payload
+                </summary>
+                <pre className="mt-3 max-h-96 overflow-auto rounded bg-gray-950 p-4 text-xs text-gray-50">
+                  {JSON.stringify(submissionPayload, null, 2)}
+                </pre>
+              </details>
+            ) : null}
           </section>
         ) : null}
       </div>

@@ -122,6 +122,7 @@ export interface CustomerRecord {
 
 const storageKey = 'pvf-participant-events-v1';
 const customerStorageKey = 'pvf-participant-customers-v1';
+const registrationApiPath = '/api/v1/registration';
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -366,27 +367,53 @@ async function readCustomersFromFirebase(): Promise<CustomerRecord[] | null> {
   }
 }
 
+async function readCustomersFromApi(): Promise<CustomerRecord[] | null> {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const response = await fetch(registrationApiPath);
+    if (!response.ok) {
+      throw new Error(`Registration API returned ${response.status}`);
+    }
+
+    const data = await response.json() as Partial<CustomerRecord>[];
+    if (!Array.isArray(data) || data.length === 0) {
+      return null;
+    }
+
+    return data.map(customer => {
+      const fallbackEmail = typeof customer.Email === 'string' ? customer.Email.trim() : '';
+      const normalizedEmail = fallbackEmail.toLowerCase();
+      const normalizedCustomer = {
+        ...(customer as CustomerRecord),
+        Email: normalizedEmail,
+      };
+
+      return {
+        ...normalizedCustomer,
+        participant: normalizedCustomer.participant ?? normalizeParticipant(normalizedCustomer),
+        Events: Array.isArray(normalizedCustomer.Events) ? normalizedCustomer.Events.map(normalizeEventRecord) : []
+      } satisfies CustomerRecord;
+    });
+  } catch (error) {
+    console.warn('Unable to load participants from the registration API, trying Firestore instead.', error);
+    return null;
+  }
+}
+
 export async function getCustomers(): Promise<CustomerRecord[]> {
   await wait(300);
 
+  const apiCustomers = await readCustomersFromApi();
+  if (apiCustomers && apiCustomers.length > 0) {
+    return mergeWithStoredEvents(apiCustomers);
+  }
+
   const firebaseCustomers = await readCustomersFromFirebase();
   if (firebaseCustomers && firebaseCustomers.length > 0) {
-    const storedEvents = readStoredEvents();
-    const normalizedCustomers = firebaseCustomers.map(customer => {
-      const email = customer.Email?.toLowerCase();
-      const persistedEvents = email ? storedEvents[email] ?? [] : [];
-      const firebaseEvents = Array.isArray(customer.Events) ? customer.Events.map(normalizeEventRecord) : [];
-      const eventsToUse = firebaseEvents.length > 0 ? firebaseEvents : persistedEvents;
-
-      return {
-        ...customer,
-        Email: customer.Email ?? '',
-        participant: customer.participant ?? normalizeParticipant(customer),
-        Events: eventsToUse
-      };
-    });
-
-    return normalizedCustomers;
+    return mergeWithStoredEvents(firebaseCustomers);
   }
 
   const storedEvents = readStoredEvents();
@@ -402,6 +429,24 @@ export async function getCustomers(): Promise<CustomerRecord[]> {
       Email: customer.Email ?? '',
       participant: customer.participant ?? normalizeParticipant(customer),
       Events: customer.Events ?? normalizedEvents
+    };
+  });
+}
+
+function mergeWithStoredEvents(customers: CustomerRecord[]): CustomerRecord[] {
+  const storedEvents = readStoredEvents();
+
+  return customers.map(customer => {
+    const email = customer.Email?.toLowerCase();
+    const persistedEvents = email ? storedEvents[email] ?? [] : [];
+    const sourceEvents = Array.isArray(customer.Events) ? customer.Events.map(normalizeEventRecord) : [];
+    const eventsToUse = sourceEvents.length > 0 ? sourceEvents : persistedEvents.map(normalizeEventRecord);
+
+    return {
+      ...customer,
+      Email: customer.Email ?? '',
+      participant: customer.participant ?? normalizeParticipant(customer),
+      Events: eventsToUse
     };
   });
 }
@@ -438,6 +483,52 @@ export async function saveCustomers(customers: CustomerRecord[]): Promise<void> 
   } catch (error) {
     console.warn('Unable to save participants to Firestore; local storage was updated instead.', error);
   }
+}
+
+export async function saveRegistrationCustomer(customer: CustomerRecord): Promise<void> {
+  await saveCustomerToRegistrationApi(customer);
+  saveCustomerToLocalStorage(customer);
+}
+
+async function saveCustomerToRegistrationApi(customer: CustomerRecord): Promise<void> {
+  const normalizedEmail = customer.Email?.trim().toLowerCase();
+  const payload = toSerializable({
+    ...customer,
+    Email: normalizedEmail ?? customer.Email
+  });
+
+  const response = await fetch(registrationApiPath, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Registration API returned ${response.status}`);
+  }
+}
+
+function saveCustomerToLocalStorage(customer: CustomerRecord) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const normalizedEmail = customer.Email?.trim().toLowerCase();
+  const storedCustomers = readStoredCustomers();
+  const nextCustomers = normalizedEmail
+    ? [
+      ...storedCustomers.filter(storedCustomer => storedCustomer.Email?.trim().toLowerCase() !== normalizedEmail),
+      customer
+    ]
+    : [...storedCustomers, customer];
+
+  window.localStorage.setItem(customerStorageKey, JSON.stringify(nextCustomers.map(storedCustomer => ({
+    ...storedCustomer,
+    participant: storedCustomer.participant ? toSerializable(storedCustomer.participant) as ParticipantProfile : undefined,
+    Events: (storedCustomer.Events ?? []).map(normalizeEventRecord)
+  }))));
 }
 
 export async function getCustomerByEmail(email: string): Promise<CustomerRecord | undefined> {
