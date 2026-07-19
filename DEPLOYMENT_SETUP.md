@@ -43,12 +43,12 @@ The Firebase config values are public project identifiers, so they are stored as
 
 | Variable Name | Value |
 |---------------|-------|
-| `VITE_FIREBASE_API_KEY` | `AIzaSyBkxV72Jefo-ZN9HXTTAApzWPiAuB-fn7w` |
+| `VITE_FIREBASE_API_KEY` | `AIzaSyAmDzQoSIuZVIn4CxfaBttlJbZ57wR44fw` |
 | `VITE_FIREBASE_AUTH_DOMAIN` | `primefocus-workflow.firebaseapp.com` |
 | `VITE_FIREBASE_PROJECT_ID` | `primefocus-workflow` |
 | `VITE_FIREBASE_STORAGE_BUCKET` | `primefocus-workflow.firebasestorage.app` |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `939430515884` |
-| `VITE_FIREBASE_APP_ID` | `1:939430515884:web:372f7c363f4af4be55bb09` |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `781031252848` |
+| `VITE_FIREBASE_APP_ID` | `1:781031252848:web:56d1d09d9ddd5e6b7225b5` |
 
 ## Service Account Roles
 

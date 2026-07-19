@@ -31,12 +31,12 @@ re-created in a new account with project ID `primefocus-workflow`.
 
 ### New account setup checklist
 
-1. [ ] Create a new Google Cloud project named `primefocus-workflow`.
-2. [ ] Add Firebase to the project and create a web app named `primefocus-workflow`.
+1. [x] Create a new Google Cloud project named `primefocus-workflow`.
+2. [x] Add Firebase to the project and create a web app named `primefocus-workflow`.
 3. [ ] Enable Firebase Authentication (Email/Password and Google providers).
 4. [ ] Create a Firestore database in native mode.
-5. [ ] Enable Firebase Hosting.
-6. [ ] Copy the new Firebase web app config values (API key, auth domain, project ID, storage bucket, messaging sender ID, app ID).
+5. [x] Enable Firebase Hosting.
+6. [x] Copy the new Firebase web app config values (API key, auth domain, project ID, storage bucket, messaging sender ID, app ID).
 7. [ ] Create a new `github-deploy-sa` service account and grant the roles listed in `DEPLOYMENT_SETUP.md`.
 8. [ ] Download a JSON key and add it to GitHub Secrets as `FIREBASE_SERVICE_ACCOUNT_KEY`.
 9. [ ] Update GitHub Variables with the new `VITE_FIREBASE_*` values.
