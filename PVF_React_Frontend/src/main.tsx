@@ -4,7 +4,6 @@ import { HashRouter, Routes, Route, Link, Navigate } from 'react-router'
 import './index.css'
 import Home from './pages/Home.tsx'
 import About from './pages/About.tsx'
-import Events from './pages/Events.tsx'
 import Registration from './pages/Registration.tsx'
 import Resources from './pages/Resources.tsx'
 import VisionCheck from './pages/VisionCheck.tsx'
@@ -25,7 +24,6 @@ function Nav() {
   const visibleLinks = [
     { to: '/', label: 'Home' },
     { to: '/about', label: 'About' },
-    { to: '/events', label: 'Events' },
     { to: '/register', label: 'Register' },
     { to: '/vision-check', label: 'Vision Check' },
     { to: '/resources', label: 'Resources' },
@@ -108,7 +106,6 @@ function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
-        <Route path="/events" element={<Events />} />
         <Route path="/vision-check" element={<VisionCheck />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/participants" element={<Participants />} />

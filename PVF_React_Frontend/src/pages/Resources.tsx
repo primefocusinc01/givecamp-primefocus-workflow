@@ -1,11 +1,8 @@
 import { Link } from 'react-router'
 
 const resources = [
-  { name: 'Prevent Blindness Ohio', desc: 'A lifetime of healthy vision.', href: 'https://preventblindness.org/ohio/' },
-  { name: 'Vision To Learn — Northeast Ohio', desc: 'Free eye exams and glasses for children.', href: 'https://visiontolearn.org/' },
-  { name: 'Cleveland Sight Center', desc: 'Services and support for those who are blind or low vision.', href: 'https://www.clevelandsightcenter.org/' },
+  { name: 'Prevent Blindness Ohio', desc: 'A lifetime of healthy vision.', href: 'https://preventblindness.org/ohio/' }
 ]
-
 export default function Resources() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
@@ -41,14 +38,6 @@ export default function Resources() {
         <Link to="/vision-check" className="inline-block mt-3 text-blue-700 underline">
           Start the Vision Check
         </Link>
-      </section>
-
-      <section className="mt-10">
-        <h2 className="text-2xl font-semibold">Accessibility</h2>
-        <p className="mt-2 text-gray-700">
-          Our materials are designed for accessibility, including an audio newsletter for
-          those who can't see well and adjustable colors and fonts across the site.
-        </p>
       </section>
     </div>
   )
