@@ -52,7 +52,7 @@ Deployments are handled by the **Deploy to Firebase Hosting** GitHub Actions wor
 3. Click **Run workflow**.
 4. Enter `live` for the production site, or a preview channel name for testing.
 
-Live site: https://prime-focus-services.web.app
+Live site: https://primefocus-workflow.web.app
 
 See `DEPLOYMENT_SETUP.md` for the full setup and required GitHub secrets/variables.
 
