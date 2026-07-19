@@ -136,29 +136,30 @@ Move the React frontend from the Spring Boot + Google Cloud Run container stack 
 
 ## Phase 4: Parallel Testing (Firebase Hosting + Existing Cloud Run)
 
-1. [ ] **Deploy current frontend to Firebase Hosting preview channel**
+1. [x] **Deploy current frontend to Firebase Hosting preview channel**
    - Run the new workflow or manual `firebase hosting:channel:deploy`.
 
-2. [ ] **Functional test checklist**
-   - [ ] Sign up with email/password creates a `users/{uid}` doc with `role: 'basic-user'`.
-   - [ ] Log in with email/password works.
-   - [ ] Google sign-in works.
-   - [ ] Role-based navigation shows/hides `Participants` and `Admin Users` links correctly.
-   - [ ] `Participants` page reads and writes `participants` collection.
-   - [ ] `AdminUsers` page lists users and can change roles.
-   - [ ] A non-admin user cannot access admin features (enforced by Firestore rules, not just UI).
-   - [ ] Log out works and redirects to `/login`.
-   - [ ] Direct URL refresh on a deep route works (with `HashRouter`, routes are `#/path`, so this is expected to work).
+2. [x] **Functional test checklist**
+   - [x] Sign up with email/password creates a `users/{uid}` doc with `role: 'basic-user'`.
+   - [x] Log in with email/password works.
+   - [x] Google sign-in works.
+   - [x] Role-based navigation shows/hides `Participants` and `Admin Users` links correctly.
+   - [x] `Participants` page reads and writes `participants` collection.
+   - [x] `AdminUsers` page lists users and can change roles.
+   - [x] A non-admin user cannot access admin features (enforced by Firestore rules, not just UI).
+   - [x] Log out works and redirects to `/login`.
+   - [x] Direct URL refresh on a deep route works (with `HashRouter`, routes are `#/path`, so this is expected to work).
 
-3. [ ] **Security test checklist**
-   - [ ] Confirm Firestore rules reject unauthorized reads/writes.
-   - [ ] Confirm unauthenticated users cannot read `participants`.
-   - [ ] Confirm non-admin users cannot read other users' docs.
+3. [x] **Security test checklist**
+   - [x] Confirm Firestore rules reject unauthorized reads/writes.
+   - [x] Confirm unauthenticated users cannot read `participants`.
+   - [x] Confirm non-admin users cannot read other users' docs.
 
-4. [ ] **Compare with Cloud Run deployment**
-   - Verify the Firebase Hosting version behaves identically to the Cloud Run version for the same frontend build.
+4. [x] **Compare with Cloud Run deployment**
+   - Verified the Firebase Hosting version behaves identically to the Cloud Run version for the same frontend build.
 
-5. [ ] **Promote to live Firebase Hosting channel only after all tests pass**
+5. [x] **Promote to live Firebase Hosting channel only after all tests pass**
+   - Live URL: https://prime-focus-services.web.app
 
 ## Phase 5: Remove Spring Boot and Cloud Run Artifacts
 
@@ -247,7 +248,7 @@ Move the React frontend from the Spring Boot + Google Cloud Run container stack 
 |-------|--------|-------|
 | Phase 1: Firebase Hosting Setup | Completed | Preview URL: https://prime-focus-services--preview-migration-oexm98dq.web.app |
 | Phase 2: Frontend Hardening | Completed | Firestore rules deployed; first-admin bootstrap documented |
-| Phase 3: GitHub Actions Workflow | In progress | Workflow created; secrets/variables documented; test pending |
-| Phase 4: Parallel Testing | Not started | |
-| Phase 5: Remove Spring Boot/Cloud Run | Not started | |
+| Phase 3: GitHub Actions Workflow | Completed | Workflow tested; preview URL: https://prime-focus-services--ci-test-kt7za2ib.web.app |
+| Phase 4: Parallel Testing | Completed | Live URL: https://prime-focus-services.web.app |
+| Phase 5: Remove Spring Boot/Cloud Run | In progress | |
 | Phase 6: Final Verification | Not started | |
