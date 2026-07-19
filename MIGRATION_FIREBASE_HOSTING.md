@@ -136,58 +136,60 @@ Move the React frontend from the Spring Boot + Google Cloud Run container stack 
 
 ## Phase 4: Parallel Testing (Firebase Hosting + Existing Cloud Run)
 
-1. [ ] **Deploy current frontend to Firebase Hosting preview channel**
+1. [x] **Deploy current frontend to Firebase Hosting preview channel**
    - Run the new workflow or manual `firebase hosting:channel:deploy`.
 
-2. [ ] **Functional test checklist**
-   - [ ] Sign up with email/password creates a `users/{uid}` doc with `role: 'basic-user'`.
-   - [ ] Log in with email/password works.
-   - [ ] Google sign-in works.
-   - [ ] Role-based navigation shows/hides `Participants` and `Admin Users` links correctly.
-   - [ ] `Participants` page reads and writes `participants` collection.
-   - [ ] `AdminUsers` page lists users and can change roles.
-   - [ ] A non-admin user cannot access admin features (enforced by Firestore rules, not just UI).
-   - [ ] Log out works and redirects to `/login`.
-   - [ ] Direct URL refresh on a deep route works (with `HashRouter`, routes are `#/path`, so this is expected to work).
+2. [x] **Functional test checklist**
+   - [x] Sign up with email/password creates a `users/{uid}` doc with `role: 'basic-user'`.
+   - [x] Log in with email/password works.
+   - [x] Google sign-in works.
+   - [x] Role-based navigation shows/hides `Participants` and `Admin Users` links correctly.
+   - [x] `Participants` page reads and writes `participants` collection.
+   - [x] `AdminUsers` page lists users and can change roles.
+   - [x] A non-admin user cannot access admin features (enforced by Firestore rules, not just UI).
+   - [x] Log out works and redirects to `/login`.
+   - [x] Direct URL refresh on a deep route works (with `HashRouter`, routes are `#/path`, so this is expected to work).
 
-3. [ ] **Security test checklist**
-   - [ ] Confirm Firestore rules reject unauthorized reads/writes.
-   - [ ] Confirm unauthenticated users cannot read `participants`.
-   - [ ] Confirm non-admin users cannot read other users' docs.
+3. [x] **Security test checklist**
+   - [x] Confirm Firestore rules reject unauthorized reads/writes.
+   - [x] Confirm unauthenticated users cannot read `participants`.
+   - [x] Confirm non-admin users cannot read other users' docs.
 
-4. [ ] **Compare with Cloud Run deployment**
-   - Verify the Firebase Hosting version behaves identically to the Cloud Run version for the same frontend build.
+4. [x] **Compare with Cloud Run deployment**
+   - Verified the Firebase Hosting version behaves identically to the Cloud Run version for the same frontend build.
 
-5. [ ] **Promote to live Firebase Hosting channel only after all tests pass**
+5. [x] **Promote to live Firebase Hosting channel only after all tests pass**
+   - Live URL: https://prime-focus-services.web.app
 
 ## Phase 5: Remove Spring Boot and Cloud Run Artifacts
 
 ### 5.1 Code and build cleanup
 
-1. [ ] **Remove backend source**
-   - Delete `src/main/java/`, `src/main/resources/`, and `src/test/java/`.
-   - Delete `build.gradle`, `settings.gradle`, `gradlew`, `gradlew.bat`, and `gradle/` directory.
+1. [x] **Remove backend source**
+   - Deleted `src/main/java/`, `src/main/resources/`, and `src/test/java/`.
+   - Deleted `build.gradle`, `settings.gradle`, `gradlew`, `gradlew.bat`, and `gradle/` directory.
 
-2. [ ] **Remove Docker/container files**
-   - Delete root `Dockerfile` (the Spring Boot + frontend container).
-   - Delete `PVF_React_Frontend/Dockerfile` (nginx container) unless you want to keep a container option; since Firebase Hosting is the target, it is no longer needed.
-   - Delete `.dockerignore`.
+2. [x] **Remove Docker/container files**
+   - Deleted root `Dockerfile` (the Spring Boot + frontend container).
+   - Deleted `PVF_React_Frontend/Dockerfile` (nginx container).
+   - Deleted `.dockerignore`.
 
-3. [ ] **Remove Cloud Run deployment workflow**
-   - Delete `.github/workflows/deploy-cloud-run.yml`.
+3. [x] **Remove Cloud Run deployment workflow**
+   - Deleted `.github/workflows/deploy-cloud-run.yml`.
 
 ### 5.2 Documentation cleanup
 
-1. [ ] **Update `AGENTS.md` / `CLAUDE.md`**
-   - Remove Spring Boot, Gradle, Cloud Run, and `GOOGLE_CREDENTIALSJSON` references.
-   - Add Firebase Hosting deployment instructions and Firestore rules guidance.
+1. [x] **Update `AGENTS.md` / `CLAUDE.md`**
+   - Rewrote for the Firebase Hosting stack (React, Firebase Auth, Firestore, Firebase Hosting).
 
-2. [ ] **Update or remove `DEPLOYMENT_SETUP.md`**
-   - Replace Cloud Run setup steps with Firebase Hosting setup steps.
-   - Document the new GitHub Actions workflow and required secrets.
+2. [x] **Update `DEPLOYMENT_SETUP.md`**
+   - Replaced Cloud Run setup with Firebase Hosting setup, including GitHub Actions workflow and required secrets/variables.
 
-3. [ ] **Update `README.md`**
-   - Reflect the new stack, build commands, and deployment process.
+3. [x] **Update `README.md`**
+   - Added project-level README with the new stack, build commands, deployment, security rules, and admin bootstrap.
+
+4. [x] **Simplify `.gitignore`**
+   - Removed Gradle/Spring Boot specific entries that are no longer needed.
 
 ### 5.3 GCP resource teardown (manual, outside of code)
 
@@ -208,7 +210,7 @@ Move the React frontend from the Spring Boot + Google Cloud Run container stack 
 
 6. [ ] **Remove GitHub secrets that are no longer needed**
    - `GCP_SA_KEY`
-   - `GCP_PROJECT_ID` (may be reused for Firebase Hosting if not secret)
+   - `GCP_PROJECT_ID`
    - `GCP_REGION`
    - `GCP_SERVICE_NAME`
    - `GCP_ARTIFACT_REGISTRY`
@@ -247,7 +249,7 @@ Move the React frontend from the Spring Boot + Google Cloud Run container stack 
 |-------|--------|-------|
 | Phase 1: Firebase Hosting Setup | Completed | Preview URL: https://prime-focus-services--preview-migration-oexm98dq.web.app |
 | Phase 2: Frontend Hardening | Completed | Firestore rules deployed; first-admin bootstrap documented |
-| Phase 3: GitHub Actions Workflow | In progress | Workflow created; secrets/variables documented; test pending |
-| Phase 4: Parallel Testing | Not started | |
-| Phase 5: Remove Spring Boot/Cloud Run | Not started | |
+| Phase 3: GitHub Actions Workflow | Completed | Workflow tested; preview URL: https://prime-focus-services--ci-test-kt7za2ib.web.app |
+| Phase 4: Parallel Testing | Completed | Live URL: https://prime-focus-services.web.app |
+| Phase 5: Remove Spring Boot/Cloud Run | Code/docs complete | GCP teardown pending |
 | Phase 6: Final Verification | Not started | |
